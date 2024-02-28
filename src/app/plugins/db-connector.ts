@@ -1,15 +1,25 @@
-import { FastifyInstance, FastifyPluginAsync } from 'fastify';
+import {FastifyInstance, FastifyPluginAsync} from 'fastify';
 import mongoose from 'mongoose';
-import { FeesCollectedEventModel } from '../models';
+import {FeesCollectedEventModel, ValueModel} from '../models';
+import fp from "fastify-plugin";
+import {configs} from "../configs";
 
-const dbConnector: FastifyPluginAsync = async (fastify: FastifyInstance) => {
+declare module 'fastify' {
+  interface FastifyInstance {
+    mongo: { FeesCollectedEvent: typeof FeesCollectedEventModel, Value: typeof ValueModel }
+  }
+}
+
+const dbConnector: FastifyPluginAsync = fp(async function (fastify: FastifyInstance) {
   try {
-    await mongoose.connect('mongodb://localhost:27017/lifi');
-    fastify.decorate('mongo', { FeesCollectedEvent: FeesCollectedEventModel });
+    await mongoose.connect(configs.mongodbUri);
+    // TODO: I'm pretty sure we can do this better through "glob" or something like that
+    fastify.decorate('mongo', { FeesCollectedEvent: FeesCollectedEventModel, Value: ValueModel });
   } catch (err) {
+    // TODO: Should use logger instead
     console.error(err);
   }
-};
+})
 
 export default dbConnector;
 
